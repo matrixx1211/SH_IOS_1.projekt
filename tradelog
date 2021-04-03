@@ -20,14 +20,12 @@ usage() {
                 graph-pos       Prints list of values of held positions according to TICKER\n"
 }
 
-# FILTERS
-AFTER_TIME_FILTER=""; BEFORE_TIME_FILTER="9999-99-99 99:99:99"; TICKS=""; WIDTH=""
-# COMMAND
-COMMAND=""
-# FILE
-INPUT=""
-# SCRIPT OUTPUT
-OUTPUT=""
+AFTER_TIME_FILTER=""                        # FILTER for records after set date
+BEFORE_TIME_FILTER="9999-99-99 99:99:99"    # FILTER for records before set date
+TICKS=""                                    # FILTER for records with TICKS
+WIDTH=""                                    # FILTER for max line length
+COMMAND=""                                  # COMMAND
+INPUT=""                                    # FILE/STDIN
 
 while [ $# -gt 0 ]; do
     case "$1" in
