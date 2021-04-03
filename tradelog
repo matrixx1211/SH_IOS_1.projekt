@@ -1,0 +1,96 @@
+#!/bin/sh
+export POSIXLY_CORRECT=yes
+export LC_NUMERIC=en_US.UTF-8
+
+########    USAGE    ########    
+usage() {
+    printf "USAGE:  tradelog [-h|--help] [FILTERS] [COMMAND] [LOG [LOG2 [...]]
+            FILTERS:
+                -a DATETIME     Records with DATE after DATETIME
+                -b DATETIME     Records with DATE before DATETIME
+                -t TICKER       Records with TICKER
+                -w WIDTH        Set WIDTH of longest line
+
+            COMMAND:
+                list-tick       Prints list of TICKERs
+                profit          Prints profit from closed positions (suma SELL - suma BUY)
+                pos             Prints list of values of currently held positions in descending order 
+                last-price      Prints last known price of TICKER 
+                hist-ord        Prints histogram of the number of transactions according to TICKER 
+                graph-pos       Prints list of values of held positions according to TICKER\n"
+}
+
+# FILTERS
+AFTER_TIME_FILTER=""; BEFORE_TIME_FILTER="9999-99-99 99:99:99"; TICKS=""; WIDTH=""
+# COMMAND
+COMMAND=""
+# FILE 
+LOG_FILE=""; GZ_LOG_FILE=""; READ_INPUT=""
+# SCRIPT OUTPUT
+OUTPUT=""
+
+while [ $# -gt 0 ]; do
+    case "$1" in
+    # FILTER 
+    -a) if [ "$2" \> "$AFTER_TIME_FILTER" ]; then AFTER_TIME_FILTER=$2; fi; shift 2;;
+    -b) if [ "$2" \< "$BEFORE_TIME_FILTER" ]; then BEFORE_TIME_FILTER=$2; fi; shift 2;;
+    -t) if [ -z "$TICKS" ]; then TICKS="$2"; else TICKS="$TICKS\|$2"; fi; shift 2;;
+    -w) WIDTH="$2"; shift 2;;
+
+    # COMMAND
+    list-tick | profit | pos | last-price | hist-ord | graph-pos) 
+    if [ -z "$COMMAND" ]; then COMMAND="$1"; else printf "Called with more than one command.\n"; usage; exit 1; fi; shift 1 ;;
+
+    # USAGE
+    -h | --help) usage; exit 0;;
+    # FILES
+    *.log) LOG_FILE="$1 $LOG_FILE" shift 1;;
+    *.gz) GZ_LOG_FILE="$1 $GZ_LOG_FILE" shift 1;;
+    
+    # OTHER
+    *) echo "Unavailable choice: '$1' - check input."; usage; exit 1;;
+    esac
+done
+
+# READING INPUT
+if [ -z "$LOG_FILE" ] && [ -z "$GZ_LOG_FILE" ]; then
+    READ_INPUT="cat -"
+    elif [ -n "$LOG_FILE" ] && [ -z "$GZ_LOG_FILE" ]; then
+        READ_INPUT="cat $LOG_FILE"
+        elif [ -n "$GZ_LOG_FILE" ] && [ -z "$LOG_FILE" ]; then
+            READ_INPUT="gzip -d -c $GZ_LOG_FILE"
+            else
+                READ_INPUT="gzip -d -c $GZ_LOG_FILE | cat $LOG_FILE"
+fi
+
+########    FILTERS    ########
+TICKER_FILTER="grep '^.*;\($TICKS\);'"
+DATETIME_FILTER="awk -F ';' '{ if ("\"$AFTER_TIME_FILTER"\"<\$1 && "\"$BEFORE_TIME_FILTER"\">"\$1") print }'"
+########    COMMAND    ########
+case $COMMAND in
+    list-tick) echo "listtick" ;;
+    profit) echo "profit" ;;
+    pos) echo "pos" ;;
+    last-price) echo "lastprice" ;;
+    hist-ord) echo "histord" ;;
+    graph-pos) echo "graphpos" ;;
+esac
+INPUT="$( gzip -d -c $GZ_LOG_FILE )"
+INPUT="$INPUT$( cat $LOG_FILE )"
+echo "$INPUT" | eval "$TICKER_FILTER" | eval "$DATETIME_FILTER"
+#eval "$READ_INPUT" | eval "$TICKER_FILTER" | eval "$DATETIME_FILTER"
+
+#X="$READ_INPUT | $TICKER_FILTER | $DATETIME_FILTER"
+#eval "$X"
+
+
+# DEBUG :)
+echo "AFTER_TIME_FILTER: $AFTER_TIME_FILTER"
+echo "BEFORE_TIME_FILTER: $BEFORE_TIME_FILTER"
+echo "TICKS: $TICKS"
+echo "WIDTH: $WIDTH"
+echo "COMMAND: $COMMAND"
+echo "LOG_FILE: $LOG_FILE"
+echo "GZ_LOG_FILE: $GZ_LOG_FILE"
+echo "READ_INPUT: $READ_INPUT"
+echo "OUTPUT: $OUTPUT"
