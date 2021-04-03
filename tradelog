@@ -44,10 +44,8 @@ while [ $# -gt 0 ]; do
     # USAGE
     -h | --help) usage; exit 0;;
     # FILES
-    *.log) INPUT="$INPUT$( cat $1 )"; shift 1;;
-    *.gz) INPUT="$INPUT$( gzip -d -c $1 )"; shift 1;;
-    
-
+    *.log) INPUT="$INPUT\n$( cat $1 )"; shift 1;;
+    *.gz) INPUT="$INPUT\n$( gzip -d -c $1 )"; shift 1;;
     
     # OTHER
     *) echo "Unavailable choice: '$1' - check input."; usage; exit 1;;
@@ -57,27 +55,36 @@ done
 ########    FILTERS    ########
 TICKER_FILTER="grep '^.*;\($TICKS\);'"
 DATETIME_FILTER="awk -F ';' '{ if ("\"$AFTER_TIME_FILTER"\"<\$1 && "\"$BEFORE_TIME_FILTER"\">"\$1") print }'"
+if [ -z "$TICKS" ]; then    
+    FILTERED_DATA='echo "$INPUT" | eval "$DATETIME_FILTER | sort"'
+    else 
+    FILTERED_DATA='echo "$INPUT" | eval "$TICKER_FILTER" | eval "$DATETIME_FILTER | sort"'
+fi
 
 ########    COMMAND    ########
 case $COMMAND in
-    list-tick) echo "listtick" ;;
-    profit) echo "profit" ;;
-    pos) echo "pos" ;;
-    last-price) echo "lastprice" ;;
-    hist-ord) echo "histord" ;;
-    graph-pos) echo "graphpos" ;;
+    #print all tickers alphabetickly ordered
+    list-tick) eval "$FILTERED_DATA" | sort -u -s -t ';' -k 2,2 | awk -F ';' '{print $2}' ;;
+
+    #sell - buy
+    profit) eval "$FILTERED_DATA" | sort -s -t ';' -k 2,3 ;;# here i skončit| awk 'FNR>1{for(i=3;i<=NF;i++){sum+=$i};if(sum>100){print sum > "out_file"};sum=""}' ;;##| awk -F ';' '{ if ($3=="buy") {array[$2$3]+=$4;} else {array[$2$3]-=$4;} print array[$2$3]}';; 
+
+    pos) eval "$FILTERED_DATA" ;;
+
+    last-price) eval "$FILTERED_DATA" ;;
+
+    hist-ord) eval "$FILTERED_DATA" ;;
+
+    graph-pos) eval "$FILTERED_DATA" ;;
 esac
 
-echo "$INPUT" | eval "$TICKER_FILTER" | eval "$DATETIME_FILTER"
 
 
 # DEBUG :)
+: '
 echo "AFTER_TIME_FILTER: $AFTER_TIME_FILTER"
 echo "BEFORE_TIME_FILTER: $BEFORE_TIME_FILTER"
 echo "TICKS: $TICKS"
 echo "WIDTH: $WIDTH"
 echo "COMMAND: $COMMAND"
-echo "LOG_FILE: $LOG_FILE"
-echo "GZ_LOG_FILE: $GZ_LOG_FILE"
-echo "READ_INPUT: $READ_INPUT"
-echo "OUTPUT: $OUTPUT"
+'
