@@ -24,8 +24,8 @@ usage() {
 AFTER_TIME_FILTER=""; BEFORE_TIME_FILTER="9999-99-99 99:99:99"; TICKS=""; WIDTH=""
 # COMMAND
 COMMAND=""
-# FILE 
-LOG_FILE=""; GZ_LOG_FILE=""; READ_INPUT=""
+# FILE
+INPUT=""
 # SCRIPT OUTPUT
 OUTPUT=""
 
@@ -44,28 +44,20 @@ while [ $# -gt 0 ]; do
     # USAGE
     -h | --help) usage; exit 0;;
     # FILES
-    *.log) LOG_FILE="$1 $LOG_FILE" shift 1;;
-    *.gz) GZ_LOG_FILE="$1 $GZ_LOG_FILE" shift 1;;
+    *.log) INPUT="$INPUT$( cat $1 )"; shift 1;;
+    *.gz) INPUT="$INPUT$( gzip -d -c $1 )"; shift 1;;
+    
+
     
     # OTHER
     *) echo "Unavailable choice: '$1' - check input."; usage; exit 1;;
     esac
 done
 
-# READING INPUT
-if [ -z "$LOG_FILE" ] && [ -z "$GZ_LOG_FILE" ]; then
-    READ_INPUT="cat -"
-    elif [ -n "$LOG_FILE" ] && [ -z "$GZ_LOG_FILE" ]; then
-        READ_INPUT="cat $LOG_FILE"
-        elif [ -n "$GZ_LOG_FILE" ] && [ -z "$LOG_FILE" ]; then
-            READ_INPUT="gzip -d -c $GZ_LOG_FILE"
-            else
-                READ_INPUT="gzip -d -c $GZ_LOG_FILE | cat $LOG_FILE"
-fi
-
 ########    FILTERS    ########
 TICKER_FILTER="grep '^.*;\($TICKS\);'"
 DATETIME_FILTER="awk -F ';' '{ if ("\"$AFTER_TIME_FILTER"\"<\$1 && "\"$BEFORE_TIME_FILTER"\">"\$1") print }'"
+
 ########    COMMAND    ########
 case $COMMAND in
     list-tick) echo "listtick" ;;
@@ -75,13 +67,8 @@ case $COMMAND in
     hist-ord) echo "histord" ;;
     graph-pos) echo "graphpos" ;;
 esac
-INPUT="$( gzip -d -c $GZ_LOG_FILE )"
-INPUT="$INPUT$( cat $LOG_FILE )"
-echo "$INPUT" | eval "$TICKER_FILTER" | eval "$DATETIME_FILTER"
-#eval "$READ_INPUT" | eval "$TICKER_FILTER" | eval "$DATETIME_FILTER"
 
-#X="$READ_INPUT | $TICKER_FILTER | $DATETIME_FILTER"
-#eval "$X"
+echo "$INPUT" | eval "$TICKER_FILTER" | eval "$DATETIME_FILTER"
 
 
 # DEBUG :)
