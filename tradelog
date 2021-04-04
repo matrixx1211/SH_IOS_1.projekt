@@ -72,8 +72,10 @@ case $COMMAND in
 
     last-price) eval "$FILTERED_DATA" | sort -t ';' -k 2,2 -k 1,1 | awk -F ';' '{ if(NR==1) { tick=$2; time=$1; price=$4; } else { if(tick!=$2) { printf "%-10s:%7.2f\n",tick,price; time=$1; tick=$2; price=$4; } else {price=$4;} } } END {printf "%-10s:%7.2f\n",tick,price;}';;
 
-    hist-ord) eval "$FILTERED_DATA" ;;
-
+    hist-ord) eval "$FILTERED_DATA" | sort -t ';' -k 2,2 | awk -F ';' 'BEGIN { sum=0; msg="" } { if(NR==1) { tick=$2; sum+=1 } else { if(tick!=$2) { printf "%-10s: ", tick; for(i=1; i<=sum; i++) { msg="#"msg }; printf "%s\n", msg; tick=$2; sum=1; } else { sum+=1; msg=""; } } } END { printf "%-10s: ", tick; for(i=1; i<=sum; i++) { msg="#"msg }; printf "%s\n", msg; }' ;;
+    #"%-10s:$format", tick | tr " " "#"
+    #format="%${x}s"
+    #printf "$format" | tr " " "#"
     graph-pos) eval "$FILTERED_DATA" ;;
 
     "") eval "$FILTERED_DATA" ;;
