@@ -64,14 +64,17 @@ case $COMMAND in
     #print all tickers together alphabetickly ordered
     list-tick) eval "$FILTERED_DATA" | sort -u -s -t ';' -k 2,2 | awk -F ';' '{print $2}' ;;
 
-    #all tickers sell - buy
+    #for all tickers together sell - buy
     profit) eval "$FILTERED_DATA" | sort -s -t ';' -k 2,3 | awk -F ';' 'BEGIN{ profit=0 } {if($3=="buy") { profit-=$4*$6 } else { profit+=$4*$6 }} END{ printf "%.2f",profit }';;
 
-    pos) eval "$FILTERED_DATA" | sort -s -t ';' -k 2,3;;
+    #for all tickers buy - sell group by ticker #? nevím jak to urobit #chyba v tom že neukládám tick jako v last-price
+    pos) eval "$FILTERED_DATA" | sort -s -t ';' -k 2,3 | awk -F ';' 'BEGIN{profit=0} {if(NR==1) { tick=$2; if($3=="buy") { profit+=$4*$6 } else { profit-=$4*$6 }} else { if(tick==$2) { if($3=="buy") { profit+=$4*$6 } else { profit-=$4*$6 }} else { printf "%-10s:%12.2f\n",$2,profit; tick=$2; profit=0; if($3=="buy") { profit+=$4*$6 } else { profit-=$4*$6 }}}} END{printf "%-10s:%12.2f\n",$2,profit}' | sort -s -t ':' -k 2,2 -n -r;;
 
-    last-price) eval "$FILTERED_DATA" ;;
+    last-price) eval "$FILTERED_DATA" | sort -t ';' -k 2,2 -k 1,1 | awk -F ';' '{ if(NR==1) { tick=$2; time=$1; price=$4; } else { if(tick!=$2) { printf "%-10s:%7.2f\n",tick,price; time=$1; tick=$2; price=$4; } else {price=$4;} } } END {printf "%-10s:%7.2f\n",tick,price;}';;
 
     hist-ord) eval "$FILTERED_DATA" ;;
 
     graph-pos) eval "$FILTERED_DATA" ;;
+
+    "") eval "$FILTERED_DATA" ;;
 esac
