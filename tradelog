@@ -61,13 +61,13 @@ fi
 
 ########    COMMAND    ########
 case $COMMAND in
-    #print all tickers alphabetickly ordered
+    #print all tickers together alphabetickly ordered
     list-tick) eval "$FILTERED_DATA" | sort -u -s -t ';' -k 2,2 | awk -F ';' '{print $2}' ;;
 
-    #sell - buy
-    profit) eval "$FILTERED_DATA" | sort -s -t ';' -k 2,3 ;;# here i skončit| awk 'FNR>1{for(i=3;i<=NF;i++){sum+=$i};if(sum>100){print sum > "out_file"};sum=""}' ;;##| awk -F ';' '{ if ($3=="buy") {array[$2$3]+=$4;} else {array[$2$3]-=$4;} print array[$2$3]}';; 
+    #all tickers sell - buy
+    profit) eval "$FILTERED_DATA" | sort -s -t ';' -k 2,3 | awk -F ';' 'BEGIN{ profit=0 } {if($3=="buy") { profit-=$4*$6 } else { profit+=$4*$6 }} END{ printf "%.2f",profit }';;
 
-    pos) eval "$FILTERED_DATA" ;;
+    pos) eval "$FILTERED_DATA" | sort -s -t ';' -k 2,3;;
 
     last-price) eval "$FILTERED_DATA" ;;
 
@@ -75,14 +75,3 @@ case $COMMAND in
 
     graph-pos) eval "$FILTERED_DATA" ;;
 esac
-
-
-
-# DEBUG :)
-: '
-echo "AFTER_TIME_FILTER: $AFTER_TIME_FILTER"
-echo "BEFORE_TIME_FILTER: $BEFORE_TIME_FILTER"
-echo "TICKS: $TICKS"
-echo "WIDTH: $WIDTH"
-echo "COMMAND: $COMMAND"
-'
